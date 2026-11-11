@@ -60,29 +60,62 @@ document.addEventListener('DOMContentLoaded', () => {
     // Trigger once on load
     reveal();
 
-    // Contact Form Submission (Mock)
+    // Contact Form Submission (Web3Forms)
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
-        contactForm.addEventListener('submit', (e) => {
+        contactForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = contactForm.querySelector('button');
+            const btn = contactForm.querySelector('button[type="submit"]') || contactForm.querySelector('button');
             const originalText = btn.innerText;
             
             btn.innerText = 'Sending...';
             btn.disabled = true;
-            
-            // Simulate API call
-            setTimeout(() => {
-                btn.innerText = 'Message Sent Successfully!';
-                btn.style.backgroundColor = '#25D366';
-                contactForm.reset();
-                
+
+            const formData = new FormData(contactForm);
+            const object = Object.fromEntries(formData);
+            const json = JSON.stringify(object);
+
+            try {
+                const response = await fetch('https://api.web3forms.com/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: json
+                });
+
+                const result = await response.json();
+
+                if (response.status === 200 && result.success) {
+                    btn.innerText = 'Message Sent Successfully!';
+                    btn.style.backgroundColor = '#25D366';
+                    contactForm.reset();
+                    
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                        btn.style.backgroundColor = '';
+                    }, 4000);
+                } else {
+                    btn.innerText = result.message || 'Submission failed. Please try again.';
+                    btn.style.backgroundColor = '#E53E3E';
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                        btn.style.backgroundColor = '';
+                    }, 4000);
+                }
+            } catch (error) {
+                console.error('Contact form submission error:', error);
+                btn.innerText = 'Network error. Please try again.';
+                btn.style.backgroundColor = '#E53E3E';
                 setTimeout(() => {
                     btn.innerText = originalText;
                     btn.disabled = false;
                     btn.style.backgroundColor = '';
-                }, 3000);
-            }, 1500);
+                }, 4000);
+            }
         });
     }
 });
